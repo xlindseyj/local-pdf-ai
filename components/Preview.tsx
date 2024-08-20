@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import * as pdfobject from "pdfobject"
+import pdfobject from "pdfobject"
 
 interface PreviewProps {
   fileToPreview: File
@@ -15,10 +15,6 @@ const Preview: React.FC<PreviewProps> = ({
 
   const [b64String, setb64String] = useState<string | null>(null)
 
-
-  // useEffect(() => {
-  //   console.log(b64String)
-  // }, [b64String])
   useEffect(() => {
     const options = {
       title: fileToPreview.name,
@@ -39,7 +35,7 @@ const Preview: React.FC<PreviewProps> = ({
   }, [page, b64String])
 
   return (
-    <div className="flex-grow roundex-xl" id="pdfobject">
+    <div className="flex-grow rounded-xl" id="pdfobject">
     </div>
   )
 }

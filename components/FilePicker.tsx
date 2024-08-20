@@ -5,45 +5,46 @@ import { Label } from "@/components/ui/label"
 import { Dispatch, SetStateAction, useState, DragEvent } from "react"
 
 interface FilePickerProps {
-  setSelectedFile: Dispatch<SetStateAction<File | null>>
+  setSelectedFiles: Dispatch<SetStateAction<File[]>>
   setPage: Dispatch<SetStateAction<number>>
 }
 
 const FilePicker: React.FC<FilePickerProps> = ({
-  setSelectedFile,
+  setSelectedFiles,
   setPage
 }) => {
   const [status, setStatus] = useState("");
 
   const handleFileDrop = (e: DragEvent<HTMLInputElement>) => {
     e.preventDefault()
-    const file: File = e.dataTransfer.files[0]
-    if (file.type == 'application/pdf') {
-      setSelectedFile(file)
-      setPage(1)
+    const files = Array.from(e.dataTransfer.files).filter(file => file.type === 'application/pdf');
+    if (files.length > 0) {
+      setSelectedFiles(files);
+      setPage(1);
     } else {
       setStatus("Drop PDFs only")
     }
   }
 
   return (
-    <div
-      className='flex flex-col gap-7 justify-center items-center h-[80vh]'>
+    <div className='flex flex-col gap-7 justify-center items-center h-[80vh]'>
       <Label htmlFor="pdf" className="text-xl font-bold tracking-tight text-gray-600 cursor-pointer">
-        Select PDF to chat
+        Select PDFs to chat
       </Label>
       <Input
-        onDragOver={() => setStatus("Drop PDF file to chat")}
+        onDragOver={() => setStatus("Drop PDF files to chat")}
         onDragLeave={() => setStatus("")}
         onDrop={handleFileDrop}
         id="pdf"
         type="file"
         accept='.pdf'
         className="cursor-pointer"
+        multiple
         onChange={(e) => {
           if (e.target.files) {
-            setSelectedFile(e.target.files[0])
-            setPage(1)
+            const files = Array.from(e.target.files).filter(file => file.type === 'application/pdf');
+            setSelectedFiles(files);
+            setPage(1);
           }
         }}
       />
