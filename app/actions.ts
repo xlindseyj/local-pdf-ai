@@ -1,11 +1,11 @@
 'use server'
 
-import { Document } from "llamaindex/Node"
-import { VectorStoreIndex, VectorIndexRetriever} from "llamaindex/indices/vectorStore/index"
-import { ContextChatEngine } from "llamaindex/engines/chat/ContextChatEngine"
-import { OllamaEmbedding } from "llamaindex/embeddings/OllamaEmbedding"
-import { serviceContextFromDefaults } from "llamaindex/ServiceContext"
-import { Ollama } from "llamaindex/llm/ollama"
+import { Document } from "llamaindex/Node";
+import { VectorStoreIndex, VectorIndexRetriever } from "llamaindex/indices/vectorStore/index";
+import { ContextChatEngine } from "llamaindex/engines/chat/ContextChatEngine";
+import { OllamaEmbedding } from "llamaindex/embeddings/OllamaEmbedding";
+import { serviceContextFromDefaults } from "llamaindex/ServiceContext";
+import { Ollama } from "llamaindex/llm/ollama";
 import fs from 'fs';
 import cron from 'node-cron';
 import pino from 'pino';
@@ -13,20 +13,20 @@ import { performance } from 'perf_hooks';
 import { ChatMessage } from "@/components/ChatWindow";
 
 interface LCDoc {
-  pageContent: string,
-  metadata: any,
+  pageContent: string;
+  metadata: any;
 }
 
 const embedModel = new OllamaEmbedding({
-  model: 'nomic-embed-text'
-})
+  model: 'nomic-embed-text',
+});
 
 const llm = new Ollama({
   model: "phi",
   options: {
     temperature: 0,
-  }
-})
+  },
+});
 
 let chatEngine: ContextChatEngine | null = null;
 let retriever: VectorIndexRetriever | null = null;
@@ -36,19 +36,19 @@ let index: VectorStoreIndex | null = null;
 const logger = pino({ level: 'info' });
 
 export async function preprocessDocuments(lcDocs: LCDoc[]): Promise<Document[]> {
-  return lcDocs.map(doc => new Document({
+  return lcDocs.map((doc) => new Document({
     text: doc.pageContent.replace(/\s+/g, ' ').trim(), // Normalize whitespace
-    metadata: { ...doc.metadata, wordCount: doc.pageContent.split(' ').length } // Enrich metadata
+    metadata: { ...doc.metadata, wordCount: doc.pageContent.split(' ').length }, // Enrich metadata
   }));
 }
 
 export async function validateDocuments(docs: Document[]): Promise<boolean> {
-  return docs.every(doc => doc.text.length > 0 && doc.metadata != null);
+  return docs.every((doc) => doc.text.length > 0 && doc.metadata != null);
 }
 
 export async function optimizeIndexParameters(docs: Document[]) {
   const avgDocLength = docs.reduce((sum, doc) => sum + doc.text.length, 0) / docs.length;
-  
+
   const optimalChunkSize = avgDocLength > 1000 ? 500 : 300;
   const optimalChunkOverlap = avgDocLength > 1000 ? 50 : 20;
 
@@ -62,7 +62,7 @@ export async function optimizeIndexParameters(docs: Document[]) {
 
 export async function processDocsAsync(lcDocs: LCDoc[]): Promise<void> {
   const docs = await preprocessDocuments(lcDocs);
-  
+
   if (!validateDocuments(docs)) {
     throw new Error("Document validation failed.");
   }
@@ -75,9 +75,9 @@ export async function processDocsAsync(lcDocs: LCDoc[]): Promise<void> {
     serviceContext: serviceContextFromDefaults({
       chunkSize: indexParams.chunkSize,
       chunkOverlap: indexParams.chunkOverlap,
-      embedModel, 
-      llm
-    })
+      embedModel,
+      llm,
+    }),
   });
 
   if (!index) {
@@ -90,15 +90,16 @@ export async function processDocsAsync(lcDocs: LCDoc[]): Promise<void> {
     chatEngine.reset();
   }
 
-  chatEngine = new ContextChatEngine({ retriever, chatModel: llm });
+  chatEngine = new ContextChatEngine({
+    retriever,
+    chatModel: llm,
+  });
 
   logger.info("Asynchronous document processing completed.");
 
-  // Optionally summarize the documents
   const summaries = await summarizeDocuments(lcDocs);
   summaries.forEach((summary, index) => logger.info(`Summary of Document ${index + 1}: ${summary}`));
 
-  // Schedule periodic refresh of the index if needed
   scheduleIndexRefresh('0 0 * * *', lcDocs); // Every day at midnight
 }
 
@@ -110,10 +111,9 @@ export async function chat(query: string) {
   logger.info("Querying chat engine:", query);
 
   const queryResult = await chatEngine.chat({
-    message: query
+    message: query,
   });
 
-  // Log the full response for debugging
   logger.info("Chat result:", queryResult);
 
   const response = queryResult.response;
@@ -149,7 +149,7 @@ export async function exportChat(messages: ChatMessage[]) {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const filePath = `./chats/chat-${timestamp}.txt`;
 
-  const chatContent = messages.map(msg => `${msg.role === 'ai' ? 'AI' : 'Human'}: ${msg.statement}`).join('\n');
+  const chatContent = messages.map((msg) => `${msg.role === 'ai' ? 'AI' : 'Human'}: ${msg.statement}`).join('\n');
   fs.writeFileSync(filePath, chatContent);
   logger.info(`Chat exported to ${filePath}`);
 }
@@ -169,7 +169,7 @@ export async function logError(error: Error, context: string) {
 }
 
 export async function summarizeDocuments(lcDocs: LCDoc[]): Promise<string[]> {
-  return lcDocs.map(doc => {
+  return lcDocs.map((doc) => {
     const sentences = doc.pageContent.split('. ');
     const summary = sentences.slice(0, 3).join('. ') + '...'; // Simple summary: first 3 sentences
     return summary;
@@ -195,7 +195,7 @@ export async function scheduleIndexRefresh(interval: string, lcDocs: LCDoc[]) {
 
 export async function measureProcessingTime(lcDocs: LCDoc[]) {
   const startTime = performance.now();
-  
+
   await processDocsAsync(lcDocs);
 
   const endTime = performance.now();
@@ -235,7 +235,7 @@ export async function archiveChats(archivePath: string) {
     fs.mkdirSync(archivePath, { recursive: true });
   }
 
-  files.forEach(file => {
+  files.forEach((file) => {
     const oldPath = `${chatsDir}/${file}`;
     const newPath = `${archivePath}/${file}`;
     fs.renameSync(oldPath, newPath);
@@ -245,7 +245,6 @@ export async function archiveChats(archivePath: string) {
   logger.info('All chats archived successfully.');
 }
 
-// Function to load existing chat history
 export async function loadChatHistory(filePath: string): Promise<ChatMessage[]> {
   if (!fs.existsSync(filePath)) {
     logger.warn(`Chat history file does not exist: ${filePath}`);
